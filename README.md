@@ -52,3 +52,37 @@ Get involved with MMRL by translating it into your language!
 - [tabler/tabler-icons](https://github.com/tabler/tabler-icons.git)
 - [MRepoApp/MRepo](https://github.com/MRepoApp/MRepo)
 - [topjohnwu/libsu](https://github.com/topjohnwu/libsu)
+
+## This is a private personal fork
+
+This repo mirrors upstream [MMRLApp/MMRL](https://github.com/MMRLApp/MMRL)
+for droidtop plugin work (see `PLUGIN-PLAN.md`). Private, personal use only —
+never mention it in public droidtop docs or repos.
+
+Branches:
+- `upstream-main` tracks upstream's `master` exactly (fast-forward only,
+  synced daily by `.github/workflows/sync-upstream.yml`).
+- `main` is where plugin/integration work happens; the sync workflow merges
+  `upstream-main` into it automatically when there's no conflict, and opens
+  an issue here instead of forcing anything when there is one.
+
+### Licence
+
+MMRL is GPL-3.0 (see `LICENSE`). Same as ReVanced Manager: private
+modification and personal-device use carries no extra obligation beyond
+keeping `LICENSE` and copyright notices, since installing a personal build on
+the owner's own device is not distribution. Sharing a modified build with
+anyone else would require offering that modified source under GPL-3.0.
+
+### Why MMRL over other Magisk module managers
+
+Picked over alternatives found in the same search: `yunncheng/MMRL` is a
+differently-scoped, far smaller project sharing only the name; the various
+"Alt-Repo"/"Rikj000" results are module *repositories* (JSON indexes of
+modules), not manager apps, so they're not a fit for this slot at all. MMRL
+(MMRLApp/MMRL, 2.1k+ stars) is the most actively maintained manager app in
+this space: it supports Magisk, KernelSU, and APatch as interchangeable root
+providers (`platform/`, `compat/`), ships its own CLI and WebUI-X companion
+projects, and has a template-repository project for anyone hosting a module
+repo — evidence of a real ecosystem around it rather than a one-person tool
+that might go stale.
