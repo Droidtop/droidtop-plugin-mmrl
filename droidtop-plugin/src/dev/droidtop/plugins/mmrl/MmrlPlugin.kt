@@ -107,7 +107,7 @@ class MmrlPlugin : DroidtopPlugin {
      * module, a multi-MB download) and would blow [invoke]'s 15s
      * watchdog on a real module list.
      */
-    override fun startJob(capability: PluginCapability, args: PluginArgs, progress: PluginJobProgress) {
+    override fun startJob(jobId: String, capability: PluginCapability, args: PluginArgs, progress: PluginJobProgress) {
         if (capability != PluginCapability.SETTINGS_ROWS) {
             throw UnsupportedOperationException("MmrlPlugin only runs jobs for settings_rows actions")
         }
