@@ -33,7 +33,13 @@ cd "$(dirname "$0")"
 rm -rf build
 mkdir -p build/classes
 
-kotlinc -cp "$PLUGIN_HOST_CLASSPATH" -d build/classes \
+
+# org.json (used for the modules_json row encoding) lives in android.jar
+# itself -- a platform framework API on Android, not a separate library
+# -- so kotlinc needs it on ITS OWN classpath too, not just d8's --lib
+# below; a plugin with no org.json usage (the sample) never surfaced
+# this.
+kotlinc -cp "$PLUGIN_HOST_CLASSPATH:$ANDROID_JAR" -d build/classes \
   src/dev/droidtop/plugins/mmrl/RootShell.kt \
   src/dev/droidtop/plugins/mmrl/RootProvider.kt \
   src/dev/droidtop/plugins/mmrl/ModuleManager.kt \
