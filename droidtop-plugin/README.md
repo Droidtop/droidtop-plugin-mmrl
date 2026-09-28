@@ -29,8 +29,7 @@ Plugins screen like any other plugin bundle.
   approved this plugin's root request"). `origin` is `"droidtop"`, same
   reasoning as the sibling `droidtop-plugin-shizuku` repo: this bundle is
   signed with droidtop's own pinned sample-plugin origin key, since
-  droidtop's public repo pins only that one origin and this repo is
-  private.
+  droidtop's public repo pins only that one origin.
 - `build.sh` / `sign.sh` / `.github/workflows/plugin-bundle.yml` -- same
   split and CI shape as `droidtop-plugin-shizuku`: CI builds the payload
   unsigned against a `Droidtop/droidtop` checkout's `:plugin-host`;

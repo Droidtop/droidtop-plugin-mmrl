@@ -53,11 +53,12 @@ Get involved with MMRL by translating it into your language!
 - [MRepoApp/MRepo](https://github.com/MRepoApp/MRepo)
 - [topjohnwu/libsu](https://github.com/topjohnwu/libsu)
 
-## This is a private personal fork
+## Fork status
 
 This repo mirrors upstream [MMRLApp/MMRL](https://github.com/MMRLApp/MMRL)
-for droidtop plugin work (see `PLUGIN-PLAN.md`). Private, personal use only —
-never mention it in public droidtop docs or repos.
+for droidtop plugin work (see `PLUGIN-PLAN.md`). It is an official droidtop
+plugin fork, kept in sync with upstream, not a place for droidtop's own
+patches beyond the `droidtop-plugin/` wrapper.
 
 Branches:
 - `upstream-main` tracks upstream's `master` exactly (fast-forward only,
@@ -68,11 +69,10 @@ Branches:
 
 ### Licence
 
-MMRL is GPL-3.0 (see `LICENSE`). Same as ReVanced Manager: private
-modification and personal-device use carries no extra obligation beyond
-keeping `LICENSE` and copyright notices, since installing a personal build on
-the owner's own device is not distribution. Sharing a modified build with
-anyone else would require offering that modified source under GPL-3.0.
+MMRL is GPL-3.0 (see `LICENSE`). Same as ReVanced Manager: GPL-3.0's
+copyleft obligation is to offer the modified source to anyone the software is
+distributed to, which this public repo already satisfies; `LICENSE` and
+copyright notices stay intact.
 
 ### Why MMRL over other Magisk module managers
 

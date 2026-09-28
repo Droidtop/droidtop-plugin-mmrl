@@ -1,6 +1,6 @@
 # MMRL as a droidtop plugin
 
-Private plan. Upstream: https://github.com/MMRLApp/MMRL (GPL-3.0). Manages
+Plan for MMRL as a droidtop plugin. Upstream: https://github.com/MMRLApp/MMRL (GPL-3.0). Manages
 Magisk/KernelSU/APatch modules: browse repos, install/enable/disable/update
 modules, run each module's own WebUI config screen.
 
