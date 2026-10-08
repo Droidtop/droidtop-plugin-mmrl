@@ -32,8 +32,10 @@ Plugins screen like any other plugin bundle.
   droidtop's public repo pins only that one origin.
 - `build.sh` / `sign.sh` / `.github/workflows/plugin-bundle.yml` -- same
   split and CI shape as `droidtop-plugin-shizuku`: CI builds the payload
-  unsigned against a `Droidtop/droidtop` checkout's `:plugin-host`;
-  `sign.sh` (droidtop-dev only, the real origin key) is never run there.
+  against a `Droidtop/droidtop` checkout's `:plugin-host`, then signs it with
+  `sign.sh` using the `PLUGIN_SIGNING_KEY` repo secret (optional `PLUGIN_SIGNING_CERT`
+  becomes `origin.cert`); without the secret it uploads unsigned. A `plugin-v*` tag
+  attaches the signed bundle to a release. Locally, `sign.sh` runs on droidtop-dev.
 
 To produce an installable bundle: download the `plugin-bundle` CI
 artifact's `build/manifest.json` + `build/classes.jar` (or run
