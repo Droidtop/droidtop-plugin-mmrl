@@ -50,7 +50,7 @@ Early. The catalog lists builds of this plugin, but there is no stable release y
 
 ## Licence
 
-GPL-3.0, like upstream MMRL, see [LICENSE](LICENSE).
+GPL-3.0, like upstream MMRL, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
 ---
 
