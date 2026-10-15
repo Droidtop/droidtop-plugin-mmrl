@@ -42,3 +42,7 @@ artifact's `build/manifest.json` + `build/classes.jar` (or run
 `build.sh` locally against a `:plugin-host:assembleDebug` classpath from
 a `Droidtop/droidtop` checkout), then run
 `PLUGIN_SIGNING_KEY=/root/coordination/keys/droidtop-plugins/droidtop-origin-private.pem ./sign.sh`.
+
+## Signing
+
+The bundle carries `manifest.jws`: a detached ES256 JWS over the exact bytes of `manifest.json`, with this repository's leaf certificate in `x5c` (the root itself is not included). The leaf comes from the repository secrets `PLUGIN_SIGNING_KEY` and `PLUGIN_SIGNING_CERT` and was issued by the droidtop root (pinned by the droidtop app); it names the plugin's origin and id. `sign_jws.py` writes the signature and checks it against the leaf before packing. `manifest.sig` stays in the bundle for older droidtop builds. Expiry dates are not checked.
