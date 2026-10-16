@@ -7,6 +7,7 @@
   "kind": "native_bundle",
   "capabilities": ["status_tile", "settings_rows"],
   "contractVersion": 1,
+  "category": "system",
   "requestsRoot": true,
   "abis": [],
   "entryClass": "dev.droidtop.plugins.mmrl.MmrlPlugin"
