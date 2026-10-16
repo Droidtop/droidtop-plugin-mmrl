@@ -8,6 +8,8 @@ under Unreleased.
 
 ## [Unreleased]
 
+- Names its kind for droidtop's Plugins page (`category`: system, docs/plugin-api.md 1.2, Droidtop/tracker#179).
+
 ### Added
 
 - The droidtop plugin: a root-module status tile and settings rows (2026-09-26), the plugin plan and its rewrite so plugins run in droidtop's own context (2026-09-25), the licence note and the daily upstream sync (2026-09-25).
