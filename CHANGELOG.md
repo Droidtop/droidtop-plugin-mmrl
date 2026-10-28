@@ -8,6 +8,7 @@ under Unreleased.
 
 ## [Unreleased]
 
+- Its catalog description says what it does for you, without the build's terms (Droidtop/tracker#514).
 - Names its kind for droidtop's Plugins page (`category`: system, docs/plugin-api.md 1.2, Droidtop/tracker#179).
 
 ### Added

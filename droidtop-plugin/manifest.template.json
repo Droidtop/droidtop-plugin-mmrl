@@ -2,7 +2,7 @@
   "id": "droidtop.mmrl-modules",
   "origin": "droidtop",
   "label": "Root modules",
-  "description": "Status tile and settings rows for Magisk/KernelSU/APatch modules: list, enable/disable, check updates, install from a module zip URL. Hides itself cleanly when no root solution is present.",
+  "description": "Lists your Magisk, KernelSU or APatch modules, turns them on and off, checks them for updates and installs new ones. On a device without root it stays out of the way.",
   "version": "1.0.0",
   "kind": "native_bundle",
   "capabilities": ["status_tile", "settings_rows"],
