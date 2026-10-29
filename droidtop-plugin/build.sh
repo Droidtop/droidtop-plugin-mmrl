@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Compiles, dexes and hashes droidtop.mmrl-modules's payload (three
+# Compiles, dexes and hashes droidtop.mmrl-modules's payload (five
 # source files: RootShell.kt, RootProvider.kt, ModuleManager.kt,
-# MmrlPlugin.kt) in the exact shape PluginBundleInstaller.install()
+# ModuleFacets.kt, MmrlPlugin.kt) in the exact shape PluginBundleInstaller.install()
 # expects (Droidtop/droidtop docs/SPEC.md 12a). Same build.sh shape as
 # droidtop's own samples/plugin-sample-statustile and this project's
 # droidtop-plugin-shizuku sibling.
@@ -41,6 +41,7 @@ kotlinc -cp "$PLUGIN_HOST_CLASSPATH:$ANDROID_JAR" -d build/classes \
   src/dev/droidtop/plugins/mmrl/RootShell.kt \
   src/dev/droidtop/plugins/mmrl/RootProvider.kt \
   src/dev/droidtop/plugins/mmrl/ModuleManager.kt \
+  src/dev/droidtop/plugins/mmrl/ModuleFacets.kt \
   src/dev/droidtop/plugins/mmrl/MmrlPlugin.kt
 
 d8 --output build --lib "$ANDROID_JAR" \

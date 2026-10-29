@@ -2,9 +2,12 @@ package dev.droidtop.plugins.mmrl
 
 import dev.droidtop.pluginhost.DroidtopPlugin
 import dev.droidtop.pluginhost.PluginArgs
+import dev.droidtop.pluginhost.PluginCall
 import dev.droidtop.pluginhost.PluginCapability
 import dev.droidtop.pluginhost.PluginContext
+import dev.droidtop.pluginhost.PluginErrorCode
 import dev.droidtop.pluginhost.PluginJobProgress
+import dev.droidtop.pluginhost.PluginReply
 import dev.droidtop.pluginhost.PluginResult
 import java.io.File
 import java.net.HttpURLConnection
@@ -13,20 +16,19 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 /**
- * MMRL (github.com/MMRLApp/MMRL, GPL-3.0) as a droidtop plugin: a
- * status tile + settings rows for whichever Magisk-module-compatible
- * root solution is present, per this repo's PLUGIN-PLAN.md. droidtop has
- * no business rendering a module's own WebUI config screen or a repo
- * browser (the plan's own scope note) -- this plugin only reports the
- * module list/update state back and fires enable/disable/update-check/
- * install actions by id, exactly the surface the plan asks for.
+ * MMRL (github.com/MMRLApp/MMRL, GPL-3.0) as a droidtop plugin, per this repo's PLUGIN-PLAN.md: the Magisk, KernelSU
+ * or APatch modules on this device, switched, removed, checked for updates and installed from a link. droidtop has
+ * no business rendering a module's own WebUI or a repo browser (the plan's scope note).
  *
- * `requestsRoot` is declared true in the manifest; every real action
- * here checks [PluginContext.hasRootApproval] first and answers cleanly
- * (never throws, never a hard failure) when it is false OR the device
- * has no root-module provider at all -- "root is used only after the
- * user's explicit approval of this plugin's root declaration", and a
- * device with nothing to manage is the ordinary case, not an error.
+ * Facets only (Droidtop/droidtop docs/plugin-api.md 1.10, "Facets first"; Droidtop/tracker#602): droidtop draws the
+ * settings page, the Quick Menu entry and the status line from [ModuleFacets], and their actions come back here as
+ * `ui.facets` calls and jobs. The contract 1 status tile and settings rows are gone: droidtop showed the module list
+ * as one row of raw JSON, and nothing in it could start the enable, remove, update and install jobs.
+ *
+ * `requestsRoot` is declared true in the manifest; everything here checks [PluginContext.hasRootApproval] first and
+ * answers cleanly (never throws, never a hard failure) when it is false OR the device has no root-module provider at
+ * all -- "root is used only after the user's explicit approval of this plugin's root declaration", and a device with
+ * nothing to manage is the ordinary case, not an error.
  */
 class MmrlPlugin : DroidtopPlugin {
     private lateinit var context: PluginContext
@@ -40,121 +42,80 @@ class MmrlPlugin : DroidtopPlugin {
         return RootProvider.detect()
     }
 
-    override fun invoke(capability: PluginCapability, args: PluginArgs): PluginResult = when (capability) {
-        PluginCapability.STATUS_TILE -> statusTile()
-        PluginCapability.SETTINGS_ROWS -> settingsRows()
-        else -> PluginResult.failure("MmrlPlugin does not implement ${capability.id}")
+    override fun invoke(capability: PluginCapability, args: PluginArgs): PluginResult =
+        PluginResult.failure("Root modules answers through facets only")
+
+    override fun handle(call: PluginCall): PluginReply {
+        if (call.point != ModuleFacets.POINT) return PluginReply.error(PluginErrorCode.UNSUPPORTED, "Nothing here for ${call.point}")
+        return when (call.op) {
+            "get" -> {
+                val provider = provider()
+                val modules = if (provider == RootProvider.NONE) emptyList() else ModuleManager.list()
+                PluginReply.ok(ModuleFacets.forTarget(call.args.optString("target"), provider, modules, readUpdates()))
+            }
+            ModuleFacets.OP_SET_ENABLED -> stateChange(call.args.optString("id"), if (call.args.optBoolean("value")) ModuleManager.STATE_ENABLE else ModuleManager.STATE_DISABLE)
+            ModuleFacets.OP_REMOVE -> stateChange(call.args.optString("id"), ModuleManager.STATE_REMOVE)
+            else -> PluginReply.error(PluginErrorCode.UNSUPPORTED, "Root modules has no \"${call.op}\"")
+        }
     }
 
-    /**
-     * "Where no root solution is present, it hides itself rather than
-     * breaking." There is no droidtop-side registry yet to actually hide
-     * a tile from (docs/plugin-catalog.md: the launcher/settings surface
-     * for plugin capabilities is still a seam, not built) -- this
-     * plugin's own half of that contract is to answer cleanly here
-     * rather than fail, so whatever eventually reads this (today: the
-     * manual "call status tile" action in droidtop's Plugins settings
-     * screen) never sees an error for the ordinary no-root-provider
-     * case.
-     */
-    private fun statusTile(): PluginResult {
-        val provider = provider()
-        if (provider == RootProvider.NONE) {
-            return PluginResult.success(mapOf("label" to "Root modules", "value" to RootProvider.NONE.displayName))
+    /** A module switched on or off, or marked for removal: a file touch, quick enough for a call. */
+    private fun stateChange(moduleId: String, state: String): PluginReply {
+        if (provider() == RootProvider.NONE) return PluginReply.error(PluginErrorCode.FAILED, "No root modules here, or root is not allowed for this plugin")
+        if (moduleId.isBlank()) return PluginReply.error(PluginErrorCode.FAILED, "No module was named")
+        if (!ModuleManager.setState(moduleId, state)) return PluginReply.error(PluginErrorCode.FAILED, "The module is gone, or root refused")
+        val said = when (state) {
+            ModuleManager.STATE_ENABLE -> "On after the device restarts"
+            ModuleManager.STATE_DISABLE -> "Off after the device restarts"
+            else -> "Removed when the device restarts"
         }
-        val modules = ModuleManager.list()
-        val active = modules.count { it.state == ModuleManager.STATE_ENABLE }
-        return PluginResult.success(
-            mapOf(
-                "label" to "Root modules",
-                "value" to "${provider.displayName}, ${modules.size} module(s), $active active",
-            ),
-        )
+        return PluginReply.ok(JSONObject().put("message", said))
     }
 
-    /**
-     * One row per module, JSON-encoded under one key: [PluginResult]'s
-     * values map is flat string-to-string ([PluginArgs]/[PluginResult]
-     * cross the binder as a JSON object of strings, PluginRuntimeService.kt),
-     * so a variable-length module list has to travel as one JSON-array
-     * string rather than one key per module.
-     */
-    private fun settingsRows(): PluginResult {
-        val provider = provider()
-        if (provider == RootProvider.NONE) {
-            return PluginResult.success(mapOf("provider" to RootProvider.NONE.displayName, "modules_json" to "[]"))
-        }
-        val rows = JSONArray()
-        ModuleManager.list().forEach { m ->
-            rows.put(
-                JSONObject()
-                    .put("id", m.id)
-                    .put("name", m.name)
-                    .put("version", m.version)
-                    .put("author", m.author)
-                    .put("description", m.description)
-                    .put("state", m.state),
-            )
-        }
-        return PluginResult.success(mapOf("provider" to provider.displayName, "modules_json" to rows.toString()))
-    }
-
-    /**
-     * The long-running counterpart to [settingsRows]: enable/disable/
-     * remove are near-instant file touches but still worth a job (one
-     * `su` round trip can stall on a slow/starting root daemon); update
-     * checking and install are genuinely slow (a network fetch per
-     * module, a multi-MB download) and would blow [invoke]'s 15s
-     * watchdog on a real module list.
-     */
+    /** The slow ones, as jobs: an update check asks every module's address, an install downloads a .zip. */
     override fun startJob(jobId: String, capability: PluginCapability, args: PluginArgs, progress: PluginJobProgress) {
-        if (capability != PluginCapability.SETTINGS_ROWS) {
-            throw UnsupportedOperationException("MmrlPlugin only runs jobs for settings_rows actions")
+        val call = args.string("call")?.let { PluginCall.fromJson(it) }
+        if (call == null || call.point != ModuleFacets.POINT) {
+            progress.complete(PluginResult.failure("Root modules runs only its own facet jobs"))
+            return
         }
         val provider = provider()
         if (provider == RootProvider.NONE) {
-            progress.complete(PluginResult.failure("no root solution on this device, or root not approved for this plugin"))
+            progress.complete(PluginResult.failure("No root modules here, or root is not allowed for this plugin"))
             return
         }
-        when (val action = args.string("action")) {
-            ACTION_ENABLE, ACTION_DISABLE, ACTION_REMOVE -> runStateAction(action, args, progress)
-            ACTION_CHECK_UPDATES -> runCheckUpdates(progress)
-            ACTION_INSTALL -> runInstall(provider, args, progress)
-            else -> progress.complete(PluginResult.failure("unknown action \"$action\""))
+        when (call.op) {
+            ModuleFacets.OP_CHECK_UPDATES -> runCheckUpdates(progress)
+            ModuleFacets.OP_INSTALL -> runInstall(provider, call.args.optString("value").trim(), progress)
+            else -> progress.complete(PluginResult.failure("Root modules has no job \"${call.op}\""))
         }
-    }
-
-    private fun runStateAction(action: String, args: PluginArgs, progress: PluginJobProgress) {
-        val moduleId = args.string("module_id")
-        if (moduleId.isNullOrBlank()) {
-            progress.complete(PluginResult.failure("missing module_id"))
-            return
-        }
-        progress.report(50, "Applying \"$action\" to $moduleId")
-        val stateAction = when (action) {
-            ACTION_ENABLE -> ModuleManager.STATE_ENABLE
-            ACTION_DISABLE -> ModuleManager.STATE_DISABLE
-            else -> ModuleManager.STATE_REMOVE
-        }
-        val ok = ModuleManager.setState(moduleId, stateAction)
-        progress.complete(
-            if (ok) {
-                PluginResult.success(mapOf("module_id" to moduleId, "action" to action))
-            } else {
-                PluginResult.failure("$action failed for $moduleId (module missing, or su refused)")
-            },
-        )
     }
 
     private fun runCheckUpdates(progress: PluginJobProgress) {
         val modules = ModuleManager.list()
-        val updates = JSONArray()
+        val updates = mutableSetOf<String>()
         val total = modules.size.coerceAtLeast(1)
         modules.forEachIndexed { index, module ->
             progress.report(index * 100 / total, "Checking ${module.name}")
-            if (hasUpdate(module)) updates.put(module.id)
+            if (hasUpdate(module)) updates += module.id
         }
-        progress.complete(PluginResult.success(mapOf("modules_with_updates_json" to updates.toString())))
+        writeUpdates(updates)
+        val said = when (updates.size) {
+            0 -> "No module has an update"
+            1 -> "1 module has an update"
+            else -> "${updates.size} modules have an update"
+        }
+        progress.complete(PluginResult.success(mapOf("message" to said)))
+    }
+
+    /** The ids the last check found an update for, kept in the plugin's own data, shown on each module's line. */
+    private fun readUpdates(): Set<String> = runCatching {
+        val array = JSONArray(File(context.privateDataDir(), UPDATES_FILE).readText())
+        (0 until array.length()).map { array.getString(it) }.toSet()
+    }.getOrDefault(emptySet())
+
+    private fun writeUpdates(ids: Set<String>) {
+        runCatching { File(context.privateDataDir(), UPDATES_FILE).writeText(JSONArray(ids.toList()).toString()) }
     }
 
     private fun hasUpdate(module: ModuleManager.Module): Boolean {
@@ -167,18 +128,17 @@ class MmrlPlugin : DroidtopPlugin {
         }
     }
 
-    private fun runInstall(provider: RootProvider, args: PluginArgs, progress: PluginJobProgress) {
-        val zipUrl = args.string("zip_url")
-        if (zipUrl.isNullOrBlank()) {
-            progress.complete(PluginResult.failure("missing zip_url"))
+    private fun runInstall(provider: RootProvider, zipUrl: String, progress: PluginJobProgress) {
+        if (!zipUrl.startsWith("https://")) {
+            progress.complete(PluginResult.failure("Give the module's https:// address"))
             return
         }
-        progress.report(10, "Downloading module")
+        progress.report(10, "Downloading the module")
         val zipFile = File(context.privateDataDir(), "install-${System.currentTimeMillis()}.zip")
         try {
             downloadTo(zipUrl, zipFile)
         } catch (e: Exception) {
-            progress.complete(PluginResult.failure("download failed: ${e.message ?: e::class.java.simpleName}"))
+            progress.complete(PluginResult.failure("The download failed: ${e.message ?: e::class.java.simpleName}"))
             return
         }
         progress.report(70, "Installing with ${provider.displayName}")
@@ -186,9 +146,9 @@ class MmrlPlugin : DroidtopPlugin {
         zipFile.delete()
         progress.complete(
             if (result.ok) {
-                PluginResult.success(mapOf("zip_url" to zipUrl))
+                PluginResult.success(mapOf("message" to "Installed. It is on after the device restarts"))
             } else {
-                PluginResult.failure(result.stderr.ifBlank { "install failed" })
+                PluginResult.failure(result.stderr.ifBlank { "The install failed" })
             },
         )
     }
@@ -218,10 +178,6 @@ class MmrlPlugin : DroidtopPlugin {
     }
 
     companion object {
-        const val ACTION_ENABLE = "enable"
-        const val ACTION_DISABLE = "disable"
-        const val ACTION_REMOVE = "remove"
-        const val ACTION_CHECK_UPDATES = "check_updates"
-        const val ACTION_INSTALL = "install"
+        private const val UPDATES_FILE = "updates.json"
     }
 }

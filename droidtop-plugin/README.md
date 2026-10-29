@@ -1,12 +1,12 @@
 # droidtop-plugin/
 
 The droidtop `native_bundle` plugin built from this repo (see
-`PLUGIN-PLAN.md`): a `status_tile` + `settings_rows` surface for whatever
+`PLUGIN-PLAN.md`): facets (`ui.facets`: a settings page and a Quick Menu entry) for whatever
 Magisk-module-compatible root solution (Magisk, KernelSU, APatch) is
 present, installed through droidtop's Settings -> App integrations ->
 Plugins screen like any other plugin bundle.
 
-- `src/` -- four files:
+- `src/` -- five files:
   - `RootShell.kt` -- one `su -c <command>` invocation at a time. This
     plugin has no manifest component of its own to bind MMRL's real
     `libsu`-backed `RootService` to, so it forgoes that persistent
@@ -18,8 +18,11 @@ Plugins screen like any other plugin bundle.
     `platform/model/ModId.kt` (GPL-3.0): the same `/data/adb/modules/<id>`
     layout and `disable`/`remove`/`update` marker-file semantics, run
     through `RootShell` instead of MMRL's bound service.
-  - `MmrlPlugin.kt` -- the `DroidtopPlugin` entry point: `status_tile`,
-    `settings_rows`, and enable/disable/remove/check-updates/install as
+  - `ModuleFacets.kt` -- the facets droidtop draws: the provider line, Check for
+    updates, Install a module from a link, and one group per module with its On
+    switch and Remove (docs/plugin-api.md 1.10).
+  - `MmrlPlugin.kt` -- the `DroidtopPlugin` entry point: `ui.facets` `get`, the
+    switch and Remove as quick calls, and check-updates/install as
     jobs (`startJob`) since a network fetch or install can run well past
     `invoke()`'s 15s watchdog.
 - `manifest.template.json` -- everything about the manifest except

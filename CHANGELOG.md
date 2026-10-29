@@ -8,6 +8,7 @@ under Unreleased.
 
 ## [Unreleased]
 
+- Plugin 1.1.0: facets only (contract 3, docs/plugin-api.md 1.10 "Facets first", Droidtop/tracker#602). Its settings page lists each module with an On switch and Remove, Check for updates and Install a module from a link, and its Quick Menu entry shows the provider and counts. The contract 1 status tile and settings rows are gone: droidtop showed the module list as one row of raw JSON, and none of the module actions could be started.
 - Its page shows a one-line summary, droidtop as its maker and its own page, from the manifest's `summary`, `publisher` and `homepage` (docs/plugin-api.md 1.2 "Presentation", Droidtop/tracker#521).
 - Its catalog description says what it does for you, without the build's terms (Droidtop/tracker#514).
 - Names its kind for droidtop's Plugins page (`category`: system, docs/plugin-api.md 1.2, Droidtop/tracker#179).
