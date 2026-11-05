@@ -25,22 +25,23 @@ import org.json.JSONObject
  * `ui.facets` calls and jobs. The contract 1 status tile and settings rows are gone: droidtop showed the module list
  * as one row of raw JSON, and nothing in it could start the enable, remove, update and install jobs.
  *
- * `requestsRoot` is declared true in the manifest; everything here checks [PluginContext.hasRootApproval] first and
- * answers cleanly (never throws, never a hard failure) when it is false OR the device has no root-module provider at
- * all -- "root is used only after the user's explicit approval of this plugin's root declaration", and a device with
- * nothing to manage is the ordinary case, not an error.
+ * Root comes only through droidtop's enhanced privileges provider: the manifest requires `priv.shell` at level root
+ * and asks for `priv.shell.root`, which the person allows or not on the approval screen (Droidtop/tracker#892).
+ * Without it, or on a device with no root-module provider at all, everything here answers cleanly (never throws,
+ * never a hard failure): a device with nothing to manage is the ordinary case, not an error.
  */
 class MmrlPlugin : DroidtopPlugin {
     private lateinit var context: PluginContext
+    private lateinit var shell: PrivilegedShell
+    private lateinit var modules: ModuleManager
 
     override fun onLoad(context: PluginContext) {
         this.context = context
+        shell = PrivilegedShell(context)
+        modules = ModuleManager(shell)
     }
 
-    private fun provider(): RootProvider {
-        if (!context.hasRootApproval()) return RootProvider.NONE
-        return RootProvider.detect()
-    }
+    private fun provider(): RootProvider = RootProvider.detect(shell)
 
     override fun invoke(capability: PluginCapability, args: PluginArgs): PluginResult =
         PluginResult.failure("Root modules answers through facets only")
@@ -50,8 +51,8 @@ class MmrlPlugin : DroidtopPlugin {
         return when (call.op) {
             "get" -> {
                 val provider = provider()
-                val modules = if (provider == RootProvider.NONE) emptyList() else ModuleManager.list()
-                PluginReply.ok(ModuleFacets.forTarget(call.args.optString("target"), provider, modules, readUpdates()))
+                val found = if (provider == RootProvider.NONE) emptyList() else modules.list()
+                PluginReply.ok(ModuleFacets.forTarget(call.args.optString("target"), provider, found, readUpdates()))
             }
             ModuleFacets.OP_SET_ENABLED -> stateChange(call.args.optString("id"), if (call.args.optBoolean("value")) ModuleManager.STATE_ENABLE else ModuleManager.STATE_DISABLE)
             ModuleFacets.OP_REMOVE -> stateChange(call.args.optString("id"), ModuleManager.STATE_REMOVE)
@@ -62,8 +63,8 @@ class MmrlPlugin : DroidtopPlugin {
     /** A module switched on or off, or marked for removal: a file touch, quick enough for a call. */
     private fun stateChange(moduleId: String, state: String): PluginReply {
         if (provider() == RootProvider.NONE) return PluginReply.error(PluginErrorCode.FAILED, "No root modules here, or root is not allowed for this plugin")
-        if (moduleId.isBlank()) return PluginReply.error(PluginErrorCode.FAILED, "No module was named")
-        if (!ModuleManager.setState(moduleId, state)) return PluginReply.error(PluginErrorCode.FAILED, "The module is gone, or root refused")
+        if (!ModuleManager.isModuleId(moduleId)) return PluginReply.error(PluginErrorCode.INVALID_ARGS, "That is not a module's id")
+        if (!modules.setState(moduleId, state)) return PluginReply.error(PluginErrorCode.FAILED, "The module is gone, or root refused")
         val said = when (state) {
             ModuleManager.STATE_ENABLE -> "On after the device restarts"
             ModuleManager.STATE_DISABLE -> "Off after the device restarts"
@@ -92,10 +93,10 @@ class MmrlPlugin : DroidtopPlugin {
     }
 
     private fun runCheckUpdates(progress: PluginJobProgress) {
-        val modules = ModuleManager.list()
+        val found = modules.list()
         val updates = mutableSetOf<String>()
-        val total = modules.size.coerceAtLeast(1)
-        modules.forEachIndexed { index, module ->
+        val total = found.size.coerceAtLeast(1)
+        found.forEachIndexed { index, module ->
             progress.report(index * 100 / total, "Checking ${module.name}")
             if (hasUpdate(module)) updates += module.id
         }
@@ -142,7 +143,7 @@ class MmrlPlugin : DroidtopPlugin {
             return
         }
         progress.report(70, "Installing with ${provider.displayName}")
-        val result = RootShell.exec(ModuleManager.installCommand(provider, zipFile.absolutePath))
+        val result = modules.install(provider, zipFile.absolutePath)
         zipFile.delete()
         progress.complete(
             if (result.ok) {

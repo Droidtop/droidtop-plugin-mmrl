@@ -19,11 +19,12 @@ enum class RootProvider(val displayName: String) {
     ;
 
     companion object {
-        fun detect(): RootProvider {
-            if (!RootShell.exec("id").ok) return NONE
-            if (RootShell.exec("magisk -v").ok) return MAGISK
-            if (RootShell.exec("ksud -V").ok) return KERNEL_SU
-            if (RootShell.exec("apd -V").ok) return APATCH
+        /** NONE also when root can't be used: no enhanced privileges provider at root level, or not allowed for this plugin. */
+        fun detect(shell: PrivilegedShell): RootProvider {
+            if (!shell.available()) return NONE
+            if (shell.exec("magisk", "-v").ok) return MAGISK
+            if (shell.exec("ksud", "-V").ok) return KERNEL_SU
+            if (shell.exec("apd", "-V").ok) return APATCH
             return NONE
         }
     }

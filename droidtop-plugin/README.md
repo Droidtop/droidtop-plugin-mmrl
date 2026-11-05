@@ -7,17 +7,19 @@ present, installed through droidtop's Settings -> App integrations ->
 Plugins screen like any other plugin bundle.
 
 - `src/` -- five files:
-  - `RootShell.kt` -- one `su -c <command>` invocation at a time. This
-    plugin has no manifest component of its own to bind MMRL's real
-    `libsu`-backed `RootService` to, so it forgoes that persistent
-    connection rather than fake it.
+  - `PrivilegedShell.kt` -- every root command, through droidtop's enhanced
+    privileges provider (`priv.shell` at level root, Droidtop/tracker#892),
+    as an argument list the provider starts with no shell; never `su` from
+    this plugin's own process. A module install runs as a stream session
+    (`exec_stream`), since it can outlast a quick call.
   - `RootProvider.kt` -- detects Magisk/KernelSU/APatch/none by asking
     each provider's own CLI to identify itself.
   - `ModuleManager.kt` -- module listing/enable/disable/remove/install,
     ported from MMRL's own `platform/manager/BaseModuleManager.kt` +
     `platform/model/ModId.kt` (GPL-3.0): the same `/data/adb/modules/<id>`
     layout and `disable`/`remove`/`update` marker-file semantics, run
-    through `RootShell` instead of MMRL's bound service.
+    through `PrivilegedShell` instead of MMRL's bound service; a module
+    id is used only in the shape Magisk requires of one.
   - `ModuleFacets.kt` -- the facets droidtop draws: the provider line, Check for
     updates, Install a module from a link, and one group per module with its On
     switch and Remove (docs/plugin-api.md 1.10).
@@ -26,10 +28,10 @@ Plugins screen like any other plugin bundle.
     jobs (`startJob`) since a network fetch or install can run well past
     `invoke()`'s 15s watchdog.
 - `manifest.template.json` -- everything about the manifest except
-  `payload` (filled in by `build.sh`). `requestsRoot: true` -- this
-  plugin's whole purpose needs it, gated at every call site on
-  `PluginContext.hasRootApproval()` (both "device has root" AND "user
-  approved this plugin's root request"). `origin` is `"droidtop"`, same
+  `payload` (filled in by `build.sh`). It requires `priv.shell` (`minLevel` root, optional) and asks for
+  `priv.shell.root`, so droidtop's approval screen offers root and the person
+  can turn it off; without it the plugin says there is nothing to manage.
+  `origin` is `"droidtop"`, same
   reasoning as the sibling `droidtop-plugin-shizuku` repo: this bundle is
   signed with droidtop's own pinned sample-plugin origin key, since
   droidtop's public repo pins only that one origin.
