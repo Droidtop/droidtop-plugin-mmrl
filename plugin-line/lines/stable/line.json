@@ -1,0 +1,9 @@
+{
+  "upstream": {
+    "repo": "MMRLApp/MMRL",
+    "ref": "master",
+    "commit": "6c2b778867f7f66ee2d208ee82887aa2cf9bb0bb"
+  },
+  "version": "0",
+  "sharedPatches": false
+}

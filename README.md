@@ -1,3 +1,65 @@
+<h1 align="center">Root modules for droidtop</h1>
+
+<p align="center">
+  <b>Magisk, KernelSU and APatch modules, from droidtop.</b><br>
+  Status and settings rows for your modules, and nothing at all when the device has no root.
+</p>
+
+<p align="center">
+  <a href="https://github.com/Droidtop/droidtop-plugin-mmrl/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/Droidtop/droidtop-plugin-mmrl?label=release&include_prereleases&style=flat-square"></a>
+  <a href="https://github.com/Droidtop/droidtop-plugin-mmrl/actions/workflows/plugin-bundle.yml"><img alt="Build" src="https://img.shields.io/github/actions/workflow/status/Droidtop/droidtop-plugin-mmrl/plugin-bundle.yml?branch=main&label=build&style=flat-square"></a>
+  <img alt="For droidtop" src="https://img.shields.io/badge/for-droidtop-2f7bf5?style=flat-square">
+  <a href="LICENSE"><img alt="License: GPL-3.0" src="https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square"></a>
+</p>
+
+<p align="center">
+  <img src="docs/images/quick-menu-panel.webp" alt="The Root modules entry in droidtop's Quick Menu plugins panel, with a Settings row" width="35%">
+</p>
+
+<p align="center">
+  <a href="#what-the-droidtop-plugin-does">What it does</a> ·
+  <a href="#install">Install</a> ·
+  <a href="#status">Status</a> ·
+  <a href="#licence">Licence</a> ·
+  <a href="#upstream-readme">Upstream README</a>
+</p>
+
+This is a fork of [MMRL](https://github.com/MMRLApp/MMRL) with a [droidtop](https://github.com/Droidtop/droidtop) plugin added in `droidtop-plugin/`. The plugin ports MMRL's module handling and leaves out MMRL's own screens.
+
+## What the droidtop plugin does
+
+- **Lists your modules** and tells you which root solution is present: Magisk, KernelSU or APatch.
+- **Enable, disable, remove, check for updates, and install** a module from a zip address.
+- **Hides itself cleanly** when there is no root solution. It does not nag you to root the device.
+
+It needs root, because managing root modules is its whole purpose. Nothing else in droidtop depends on it.
+
+## Install
+
+You need [droidtop](https://github.com/Droidtop/droidtop). You need a device that already has Magisk, KernelSU or APatch.
+
+1. In droidtop open **Settings > Plugins > Add**. droidtop's own catalog is always there.
+2. Pick **Root modules** and press **Install**.
+3. Read the permissions it asks for and press **Accept**. Nothing runs until you do.
+
+You can also browse the catalog at [droidtop.github.io](https://droidtop.github.io/), or open this plugin's install page directly: [Install in droidtop](https://droidtop.github.io/install-plugin?catalog=https%3A%2F%2Fraw.githubusercontent.com%2Fdroidtop%2Fdroidtop-platforms%2Fmain%2Fdroidtop-plugins%2Findex.json&id=droidtop.mmrl-modules). That link only opens a review inside droidtop.
+
+## Status
+
+Early. The catalog lists builds of this plugin, but there is no stable release yet, and droidtop installs from the stable stream only. The code is in `droidtop-plugin/`.
+
+## Licence
+
+GPL-3.0, like upstream MMRL, see [LICENSE](LICENSE) and [NOTICE](NOTICE).
+
+---
+
+## Upstream README
+
+The rest of this page is the README of [MMRL](https://github.com/MMRLApp/MMRL), kept as it is.
+
+---
+
 # MMRL
 
 
@@ -52,3 +114,54 @@ Get involved with MMRL by translating it into your language!
 - [tabler/tabler-icons](https://github.com/tabler/tabler-icons.git)
 - [MRepoApp/MRepo](https://github.com/MRepoApp/MRepo)
 - [topjohnwu/libsu](https://github.com/topjohnwu/libsu)
+
+## Fork status
+
+This repo mirrors upstream [MMRLApp/MMRL](https://github.com/MMRLApp/MMRL)
+for droidtop plugin work (see `PLUGIN-PLAN.md`). It is an official droidtop
+plugin fork, kept in sync with upstream, not a place for droidtop's own
+patches beyond the `droidtop-plugin/` wrapper.
+
+Branches:
+- `upstream-main` tracks upstream's `master` exactly (fast-forward only,
+  synced daily by `.github/workflows/sync-upstream.yml`).
+- `main` is where plugin/integration work happens; the sync workflow merges
+  `upstream-main` into it automatically when there's no conflict, and opens
+  an issue here instead of forcing anything when there is one.
+
+### Licence
+
+MMRL is GPL-3.0 (see `LICENSE`). Same as ReVanced Manager: GPL-3.0's
+copyleft obligation is to offer the modified source to anyone the software is
+distributed to, which this public repo already satisfies; `LICENSE` and
+copyright notices stay intact.
+
+### Why MMRL over other Magisk module managers
+
+Picked over alternatives found in the same search: `yunncheng/MMRL` is a
+differently-scoped, far smaller project sharing only the name; the various
+"Alt-Repo"/"Rikj000" results are module *repositories* (JSON indexes of
+modules), not manager apps, so they're not a fit for this slot at all. MMRL
+(MMRLApp/MMRL, 2.1k+ stars) is the most actively maintained manager app in
+this space: it supports Magisk, KernelSU, and APatch as interchangeable root
+providers (`platform/`, `compat/`), ships its own CLI and WebUI-X companion
+projects, and has a template-repository project for anyone hosting a module
+repo — evidence of a real ecosystem around it rather than a one-person tool
+that might go stale.
+
+## Branches
+
+The owner, 2026-11-05: "ALL plugins should keep the recipe on plugin-core, overlaid onto the release branch when
+needed. That's our standard operation." This repository is a fork, so it has three kinds of branch:
+
+- **`plugin-core`** (the default branch) holds only the droidtop plugin's own recipe: `droidtop-plugin/`, this
+  README, the workflows, the docs and the line declaration in `plugin-line/lines/stable/line.json`. Every change
+  lands here first, through a `ci/` branch. The plugin bundle is built from here.
+- **`upstream-sync`** is the upstream project, untouched. It only ever fast-forwards to the upstream
+  (`.github/workflows/sync-upstream.yml`). A new upstream commit comes back as a `ci/upstream-stable-<sha>` branch
+  that moves the line's pin on `plugin-core`.
+- **`plugin/stable`** is the release branch: the upstream commit `plugin-core` pins, with `plugin-core` written over
+  it. It is generated, never edited: `python3 tools/plugin_line.py compose stable --commit` from
+  Droidtop/droidtop-platforms. `.github/workflows/plugin-line.yml` fails when it differs from that composition.
+
+There is no `main` or `master`.

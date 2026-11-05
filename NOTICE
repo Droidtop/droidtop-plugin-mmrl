@@ -1,0 +1,8 @@
+droidtop-plugin-mmrl
+Licensed as a whole under the GNU General Public License, version 3 (LICENSE).
+
+This repository is a fork of MMRL (https://github.com/MMRLApp/MMRL), licensed under the GNU General Public License,
+version 3. Every upstream copyright and licence notice in the source files stays as it is. The
+branch upstream-main tracks upstream unchanged.
+
+The droidtop plugin code added here is our own, Copyright the droidtop contributors, GPL-3.0.
