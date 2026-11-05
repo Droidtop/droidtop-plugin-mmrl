@@ -1,1 +1,0 @@
-用於管理 Magisk、KernelSU 模組的工具。

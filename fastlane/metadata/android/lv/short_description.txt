@@ -1,1 +1,0 @@
-Moduļu pārvaldnieks Magisk un KernelSU.

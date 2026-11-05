@@ -148,3 +148,20 @@ providers (`platform/`, `compat/`), ships its own CLI and WebUI-X companion
 projects, and has a template-repository project for anyone hosting a module
 repo — evidence of a real ecosystem around it rather than a one-person tool
 that might go stale.
+
+## Branches
+
+The owner, 2026-11-05: "ALL plugins should keep the recipe on plugin-core, overlaid onto the release branch when
+needed. That's our standard operation." This repository is a fork, so it has three kinds of branch:
+
+- **`plugin-core`** (the default branch) holds only the droidtop plugin's own recipe: `droidtop-plugin/`, this
+  README, the workflows, the docs and the line declaration in `plugin-line/lines/stable/line.json`. Every change
+  lands here first, through a `ci/` branch. The plugin bundle is built from here.
+- **`upstream-sync`** is the upstream project, untouched. It only ever fast-forwards to the upstream
+  (`.github/workflows/sync-upstream.yml`). A new upstream commit comes back as a `ci/upstream-stable-<sha>` branch
+  that moves the line's pin on `plugin-core`.
+- **`plugin/stable`** is the release branch: the upstream commit `plugin-core` pins, with `plugin-core` written over
+  it. It is generated, never edited: `python3 tools/plugin_line.py compose stable --commit` from
+  Droidtop/droidtop-platforms. `.github/workflows/plugin-line.yml` fails when it differs from that composition.
+
+There is no `main` or `master`.
