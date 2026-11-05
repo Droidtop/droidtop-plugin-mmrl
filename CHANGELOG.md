@@ -8,6 +8,7 @@ under Unreleased.
 
 ## [Unreleased]
 
+- Plugin 1.2.0: root only through droidtop's enhanced privileges provider (Droidtop/tracker#892). The plugin ran `su` itself for every module action, and declared contract 3 with no permissions, so droidtop's approval screen never offered the root tick and nothing but the root manager's prompt stood in the way. It now requires `priv.shell` at level root and asks for `priv.shell.root`, a choice the person makes and can take back. Every command is an argument list the provider starts with no shell, and a module id is used only in the shape Magisk requires, so a crafted folder under /data/adb/modules can no longer run commands. An install runs as a stream session, since it can outlast a quick call.
 - Plugin 1.1.0: facets only (contract 3, docs/plugin-api.md 1.10 "Facets first", Droidtop/tracker#602). Its settings page lists each module with an On switch and Remove, Check for updates and Install a module from a link, and its Quick Menu entry shows the provider and counts. The contract 1 status tile and settings rows are gone: droidtop showed the module list as one row of raw JSON, and none of the module actions could be started.
 - Its page shows a one-line summary, droidtop as its maker and its own page, from the manifest's `summary`, `publisher` and `homepage` (docs/plugin-api.md 1.2 "Presentation", Droidtop/tracker#521).
 - Its catalog description says what it does for you, without the build's terms (Droidtop/tracker#514).

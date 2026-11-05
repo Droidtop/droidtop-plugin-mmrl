@@ -6,7 +6,7 @@
   "summary": "Your Magisk, KernelSU or APatch modules: switch, update and install them",
   "publisher": "droidtop",
   "homepage": "https://github.com/Droidtop/droidtop-plugin-mmrl",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "kind": "native_bundle",
   "provides": [
     {
@@ -22,7 +22,22 @@
   ],
   "contractVersion": 3,
   "category": "system",
-  "requestsRoot": true,
+  "requires": [
+    {
+      "api": "priv.shell",
+      "version": "1.2",
+      "optional": true,
+      "minLevel": "root",
+      "reason": "Lists your modules, switches them on and off, and installs new ones"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "priv.shell.root",
+      "reason": "Lists your modules, switches them on and off, and installs new ones",
+      "required": false
+    }
+  ],
   "abis": [],
   "entryClass": "dev.droidtop.plugins.mmrl.MmrlPlugin"
 }

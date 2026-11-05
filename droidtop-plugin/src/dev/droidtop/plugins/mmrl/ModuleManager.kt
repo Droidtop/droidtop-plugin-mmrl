@@ -6,24 +6,17 @@ package dev.droidtop.plugins.mmrl
  * (GPL-3.0, github.com/MMRLApp/MMRL) -- the exact directory layout,
  * `module.prop` fields and `disable`/`remove`/`update` marker-file
  * semantics every Magisk-module-compatible provider (Magisk, KernelSU,
- * APatch) already shares, run here through a per-call `su -c`
- * ([RootShell]) instead of MMRL's own bound root service, since a
- * droidtop plugin has no manifest component of its own to bind that to
- * (see this repo's PLUGIN-PLAN.md).
+ * APatch) already shares, run here through droidtop's enhanced privileges
+ * provider ([PrivilegedShell], Droidtop/tracker#892) instead of MMRL's own
+ * bound root service, since a droidtop plugin has no manifest component of
+ * its own to bind that to (see this repo's PLUGIN-PLAN.md).
+ *
+ * Every command is an argument list, never a shell string, and a module id
+ * is used only when it has the shape Magisk itself requires of one
+ * ([isModuleId]), so a folder under /data/adb/modules can never name a
+ * command.
  */
-object ModuleManager {
-    private const val ADB_DIR = "/data/adb"
-    private const val MODULES_DIR = "modules"
-    private const val PROP_FILE = "module.prop"
-    private const val DISABLE_FILE = "disable"
-    private const val REMOVE_FILE = "remove"
-    private const val UPDATE_FILE = "update"
-
-    const val STATE_ENABLE = "enable"
-    const val STATE_DISABLE = "disable"
-    const val STATE_REMOVE = "remove"
-    const val STATE_UPDATE = "update"
-
+class ModuleManager(private val shell: PrivilegedShell) {
     data class Module(
         val id: String,
         val name: String,
@@ -35,28 +28,31 @@ object ModuleManager {
         val state: String,
     )
 
-    private fun moduleDir(id: String) = "$ADB_DIR/$MODULES_DIR/$id"
+    private fun moduleDir(id: String) = "$MODULES_PATH/$id"
 
     fun list(): List<Module> {
-        val listing = RootShell.exec("ls -1 $ADB_DIR/$MODULES_DIR")
+        val listing = shell.exec("ls", "-1", MODULES_PATH)
         if (!listing.ok) return emptyList()
         return listing.stdout.lines()
             .map { it.trim() }
-            .filter { it.isNotEmpty() }
+            .filter(::isModuleId)
             .mapNotNull(::readModule)
     }
 
     private fun readModule(id: String): Module? {
-        val propResult = RootShell.exec("cat '${moduleDir(id)}/$PROP_FILE'")
+        val dir = moduleDir(id)
+        val propResult = shell.exec("cat", "$dir/$PROP_FILE")
         if (!propResult.ok || propResult.stdout.isBlank()) return null
         val props = propResult.stdout.lines().mapNotNull { line ->
             val parts = line.split("=", limit = 2).map { it.trim() }
             if (parts.size == 2) parts[0] to parts[1] else null
         }.toMap()
+        // One listing of the module's folder says which marker files it has.
+        val files = shell.exec("ls", "-1", dir).stdout.lines().map { it.trim() }.toSet()
         val state = when {
-            RootShell.exec("test -f '${moduleDir(id)}/$REMOVE_FILE'").ok -> STATE_REMOVE
-            RootShell.exec("test -f '${moduleDir(id)}/$DISABLE_FILE'").ok -> STATE_DISABLE
-            RootShell.exec("test -f '${moduleDir(id)}/$UPDATE_FILE'").ok -> STATE_UPDATE
+            REMOVE_FILE in files -> STATE_REMOVE
+            DISABLE_FILE in files -> STATE_DISABLE
+            UPDATE_FILE in files -> STATE_UPDATE
             else -> STATE_ENABLE
         }
         return Module(
@@ -73,21 +69,43 @@ object ModuleManager {
 
     /** [action] is one of [STATE_ENABLE]/[STATE_DISABLE]/[STATE_REMOVE] -- matches MagiskModuleManager.enable/disable/remove's own file-touch logic. */
     fun setState(id: String, action: String): Boolean {
+        if (!isModuleId(id)) return false
         val dir = moduleDir(id)
-        if (!RootShell.exec("test -d '$dir'").ok) return false
+        if (!shell.exec("ls", "-d", dir).ok) return false
         return when (action) {
-            STATE_ENABLE -> RootShell.exec("rm -f '$dir/$REMOVE_FILE' '$dir/$DISABLE_FILE'").ok
-            STATE_DISABLE -> RootShell.exec("rm -f '$dir/$REMOVE_FILE'; touch '$dir/$DISABLE_FILE'").ok
-            STATE_REMOVE -> RootShell.exec("rm -f '$dir/$DISABLE_FILE'; touch '$dir/$REMOVE_FILE'").ok
+            STATE_ENABLE -> shell.exec("rm", "-f", "$dir/$REMOVE_FILE", "$dir/$DISABLE_FILE").ok
+            STATE_DISABLE -> shell.exec("rm", "-f", "$dir/$REMOVE_FILE").ok && shell.exec("touch", "$dir/$DISABLE_FILE").ok
+            STATE_REMOVE -> shell.exec("rm", "-f", "$dir/$DISABLE_FILE").ok && shell.exec("touch", "$dir/$REMOVE_FILE").ok
             else -> false
         }
     }
 
-    /** Each provider's own real module-install CLI (MagiskModuleManager.getInstallCommand and its KernelSU/APatch equivalents). */
-    fun installCommand(provider: RootProvider, zipPath: String): String = when (provider) {
-        RootProvider.MAGISK -> "magisk --install-module '$zipPath'"
-        RootProvider.KERNEL_SU -> "ksud module install '$zipPath'"
-        RootProvider.APATCH -> "apd module install '$zipPath'"
-        RootProvider.NONE -> ""
+    /** Installs the module .zip at [zipPath] with the provider's own CLI (MagiskModuleManager.getInstallCommand and its KernelSU/APatch equivalents). */
+    fun install(provider: RootProvider, zipPath: String): PrivilegedShell.Result {
+        val argv = when (provider) {
+            RootProvider.MAGISK -> listOf("magisk", "--install-module", zipPath)
+            RootProvider.KERNEL_SU -> listOf("ksud", "module", "install", zipPath)
+            RootProvider.APATCH -> listOf("apd", "module", "install", zipPath)
+            RootProvider.NONE -> return PrivilegedShell.Result(-1, "", "No root solution to install with")
+        }
+        return shell.execLong(argv)
+    }
+
+    companion object {
+        private const val MODULES_PATH = "/data/adb/modules"
+        private const val PROP_FILE = "module.prop"
+        private const val DISABLE_FILE = "disable"
+        private const val REMOVE_FILE = "remove"
+        private const val UPDATE_FILE = "update"
+
+        const val STATE_ENABLE = "enable"
+        const val STATE_DISABLE = "disable"
+        const val STATE_REMOVE = "remove"
+        const val STATE_UPDATE = "update"
+
+        /** Magisk's own rule for a module id (its developer guide, `module.prop`): a letter, then letters, digits, `.`, `_` or `-`. */
+        private val MODULE_ID = Regex("^[a-zA-Z][a-zA-Z0-9._-]+$")
+
+        fun isModuleId(id: String): Boolean = MODULE_ID.matches(id)
     }
 }
