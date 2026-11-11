@@ -1,0 +1,43 @@
+{
+  "id": "droidtop.mmrl-modules",
+  "origin": "droidtop",
+  "label": "Root modules",
+  "description": "Lists your Magisk, KernelSU or APatch modules, turns them on and off, checks them for updates and installs new ones. On a device without root it stays out of the way.",
+  "summary": "Your Magisk, KernelSU or APatch modules: switch, update and install them",
+  "publisher": "droidtop",
+  "homepage": "https://github.com/Droidtop/droidtop-plugin-mmrl",
+  "version": "1.2.0",
+  "kind": "native_bundle",
+  "provides": [
+    {
+      "point": "ui.facets",
+      "version": 1,
+      "id": "modules",
+      "label": "Root modules",
+      "targets": [
+        "settings.page",
+        "quickmenu"
+      ]
+    }
+  ],
+  "contractVersion": 3,
+  "category": "system",
+  "requires": [
+    {
+      "api": "priv.shell",
+      "version": "1.2",
+      "optional": true,
+      "minLevel": "root",
+      "reason": "Lists your modules, switches them on and off, and installs new ones"
+    }
+  ],
+  "permissions": [
+    {
+      "id": "priv.shell.root",
+      "reason": "Lists your modules, switches them on and off, and installs new ones",
+      "required": false
+    }
+  ],
+  "abis": [],
+  "entryClass": "dev.droidtop.plugins.mmrl.MmrlPlugin"
+}
