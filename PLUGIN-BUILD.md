@@ -1,4 +1,4 @@
-# droidtop-plugin/
+# The droidtop plugin: building and signing
 
 The droidtop `native_bundle` plugin built from this repo (see
 `PLUGIN-PLAN.md`): facets (`ui.facets`: a settings page and a Quick Menu entry) for whatever
