@@ -24,7 +24,7 @@
   <a href="#upstream-readme">Upstream README</a>
 </p>
 
-This is a fork of [MMRL](https://github.com/MMRLApp/MMRL) with a [droidtop](https://github.com/Droidtop/droidtop) plugin added in `droidtop-plugin/`. The plugin ports MMRL's module handling and leaves out MMRL's own screens.
+This is a fork of [MMRL](https://github.com/MMRLApp/MMRL) with a [droidtop](https://github.com/Droidtop/droidtop) plugin added beside it: `src/`, `build.sh`, `sign.sh` and `manifest.template.json` (how they build: `PLUGIN-BUILD.md`). The plugin ports MMRL's module handling and leaves out MMRL's own screens.
 
 ## What the droidtop plugin does
 
@@ -46,7 +46,7 @@ You can also browse the catalog at [droidtop.github.io](https://droidtop.github.
 
 ## Status
 
-Early. The catalog lists builds of this plugin, but there is no stable release yet, and droidtop installs from the stable stream only. The code is in `droidtop-plugin/`.
+Early. The catalog lists builds of this plugin, but there is no stable release yet, and droidtop installs from the stable stream only. The code is in `src/`.
 
 ## Licence
 
@@ -120,7 +120,7 @@ Get involved with MMRL by translating it into your language!
 This repo mirrors upstream [MMRLApp/MMRL](https://github.com/MMRLApp/MMRL)
 for droidtop plugin work (see `PLUGIN-PLAN.md`). It is an official droidtop
 plugin fork, kept in sync with upstream, not a place for droidtop's own
-patches beyond the `droidtop-plugin/` wrapper.
+patches beyond the plugin wrapper.
 
 Branches:
 - `upstream-main` tracks upstream's `master` exactly (fast-forward only,
@@ -154,7 +154,7 @@ that might go stale.
 The owner, 2026-11-05: "ALL plugins should keep the recipe on plugin-core, overlaid onto the release branch when
 needed. That's our standard operation." This repository is a fork, so it has three kinds of branch:
 
-- **`plugin-core`** (the default branch) holds only the droidtop plugin's own recipe: `droidtop-plugin/`, this
+- **`plugin-core`** (the default branch) holds only the droidtop plugin's own recipe: `src/`, the build and signing scripts, this
   README, the workflows, the docs and the line declaration in `plugin-line/lines/stable/line.json`. Every change
   lands here first, through a `ci/` branch. The plugin bundle is built from here.
 - **`upstream-sync`** is the upstream project, untouched. It only ever fast-forwards to the upstream
